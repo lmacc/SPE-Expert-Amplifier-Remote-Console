@@ -66,7 +66,7 @@ apt-get install -y --no-install-recommends \
 API="https://api.github.com/repos/$REPO/releases/latest"
 [[ "$TAG" != "latest" ]] && API="https://api.github.com/repos/$REPO/releases/tags/$TAG"
 log "Looking up release: $TAG"
-RELEASE_JSON=$(curl -fsSL -A 'spe-remote-installer' "$API") \
+RELEASE_JSON=$(curl -fsSL "$API") \
     || die "Cannot reach GitHub releases API."
 
 NEW_TAG=$(printf '%s' "$RELEASE_JSON" \
@@ -108,7 +108,11 @@ DOWNLOAD_OK=0
 for attempt in 1 2 3; do
     log "Downloading $ASSET_NAME (attempt $attempt/3) …"
     rm -f "$ARCHIVE"
-    if curl -fsSL -A 'spe-remote-installer' \
+    # No custom User-Agent: a non-standard UA can trip ISP/CDN caches into
+    # serving a stale or wrong object. Cache-Control headers ask any
+    # intermediate proxies to revalidate rather than serve a cached copy.
+    if curl -fsSL \
+            -H 'Cache-Control: no-cache, no-store' -H 'Pragma: no-cache' \
             --retry 3 --retry-delay 2 --connect-timeout 30 \
             -o "$ARCHIVE" "$ASSET_URL"; then
         if [[ -z "$EXPECTED_SHA" ]]; then
