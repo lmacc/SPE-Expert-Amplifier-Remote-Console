@@ -152,6 +152,22 @@ chown -R "$TARGET_USER":"$TARGET_USER" "$INSTALL_DIR"
 # Convenience symlink so `spe-remoted --help` works from anywhere.
 ln -sf "$INSTALL_DIR/spe-remoted" "$BIN_LINK"
 
+# Sanity check: actually run the binary once and confirm it starts cleanly
+# (--version exits 0 and prints, never opens any sockets). Catches Qt-ABI
+# / missing-library issues here, with a clear error, instead of via a
+# systemd restart loop later.
+log "Verifying the binary runs on this system …"
+if ! out=$("$BIN_LINK" --version 2>&1); then
+    die "Installed binary failed to run:
+$out
+
+This usually means the runtime Qt libraries don't match what the binary
+was built against (Qt HttpServer in particular has an unstable ABI across
+patch levels). Please report it at:
+  https://github.com/$REPO/issues"
+fi
+ok "Binary runs: $out"
+
 # ------------------------------------------------------------------- #
 # Serial access + systemd unit.
 # ------------------------------------------------------------------- #
