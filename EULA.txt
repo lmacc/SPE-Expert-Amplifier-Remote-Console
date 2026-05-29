@@ -1,0 +1,93 @@
+SPE Expert Amplifier Remote — End-User Licence & Disclaimer
+Copyright (c) 2024-2026 Leslie McCarthy (EI5GJB). All rights reserved.
+
+This software ("the Software") is the work of EI5GJB. It is provided free of
+charge for personal, non-commercial amateur-radio use only, under the terms
+below. By downloading, installing, or using the Software you agree to these
+terms. If you do not agree, do not install or use the Software.
+
+1. LICENCE
+   You are granted a personal, non-exclusive, non-transferable, revocable
+   licence to install and use the Software on equipment you own or operate,
+   for non-commercial amateur-radio purposes only.
+
+2. RESTRICTIONS
+   You may NOT:
+   (a) sell, rent, lease, sublicense, publish, or otherwise distribute or
+       make available the Software or any copy of it to any third party;
+   (b) rebrand, rename, or remove or alter any author credit, callsign,
+       copyright notice, icon, or attribution shown in or shipped with the
+       Software;
+   (c) represent the Software, or any part of it, as your own work;
+   (d) decompile, disassemble, or reverse-engineer the Software, except to
+       the limited extent that applicable law, or the licence of a bundled
+       third-party component, expressly permits and cannot lawfully be
+       excluded.
+
+3. OWNERSHIP
+   The Software is licensed, not sold. All title, copyright, and other
+   intellectual-property rights in the Software remain with EI5GJB. No rights
+   are granted except as expressly set out in this licence.
+
+4. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTY OF
+   ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
+   WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE,
+   AND NON-INFRINGEMENT. THE AUTHOR DOES NOT WARRANT THAT THE SOFTWARE WILL
+   BE ERROR-FREE, UNINTERRUPTED, OR SECURE, OR THAT IT WILL OPERATE WITH ANY
+   PARTICULAR HARDWARE, AMPLIFIER, OR CONFIGURATION.
+
+5. USE AT YOUR OWN RISK - LIMITATION OF LIABILITY
+   YOU USE THE SOFTWARE ENTIRELY AT YOUR OWN RISK. TO THE MAXIMUM EXTENT
+   PERMITTED BY LAW, EI5GJB (THE AUTHOR) SHALL NOT BE LIABLE FOR ANY LOSS OR
+   DAMAGE WHATSOEVER, WHETHER DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   CONSEQUENTIAL, PUNITIVE, OR EXEMPLARY, ARISING OUT OF OR IN ANY WAY
+   CONNECTED WITH THE SOFTWARE OR ITS USE, MISUSE, OR INABILITY TO BE USED,
+   INCLUDING WITHOUT LIMITATION:
+   damage to, or malfunction or destruction of, amplifiers, transceivers,
+   antennas, computers, or any other equipment; property damage; fire;
+   overheating; loss of data; lost operating time; financial loss;
+   regulatory action or penalties; or personal injury or death - even if the
+   author has been advised of the possibility of such loss or damage.
+   Some jurisdictions do not allow the exclusion of certain warranties or
+   liabilities; in that case the above exclusions apply to the greatest
+   extent permitted by your local law.
+
+6. AMATEUR RADIO, RF SAFETY & REGULATORY RESPONSIBILITY
+   The Software controls high-power radio-frequency amplifying equipment,
+   including remotely and potentially while unattended. You alone are
+   responsible for:
+   (a) the safe installation, configuration, and operation of your station
+       and all connected equipment;
+   (b) compliance with all RF-exposure, electrical, thermal, and fire-safety
+       requirements;
+   (c) holding the appropriate amateur-radio licence and complying with all
+       laws, regulations, and band-plan conditions applicable to your
+       station, including any rules governing remote or unattended operation
+       in your jurisdiction;
+   (d) all transmissions made with the assistance of the Software.
+   Operating an amplifier remotely or unattended carries inherent risk of
+   equipment damage, fire, and interference. Do not do so unless you are
+   satisfied it is both safe and lawful.
+
+7. THIRD-PARTY COMPONENTS
+   The Software includes third-party components distributed under their own
+   licences; see THIRD-PARTY-NOTICES.txt. Those components remain the
+   property of their respective owners and are provided under their own
+   terms, which prevail over this licence in respect of those components.
+
+8. TERMINATION
+   This licence terminates automatically and immediately if you breach any
+   of its terms. On termination you must cease all use of the Software and
+   delete all copies in your possession or control.
+
+9. GOVERNING LAW
+   This licence is governed by and construed in accordance with the laws of
+   Ireland, without regard to its conflict-of-law rules. The courts of
+   Ireland shall have jurisdiction over any dispute arising from it, to the
+   extent permitted by the mandatory law of your place of residence.
+
+If any provision of this licence is found to be unenforceable, the remaining
+provisions shall remain in full force and effect.
+
+EI5GJB

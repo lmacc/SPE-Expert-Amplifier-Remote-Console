@@ -1,0 +1,60 @@
+THIRD-PARTY NOTICES - SPE Expert Amplifier Remote
+
+This product includes the third-party software listed below. Each component
+is the property of its respective owners and is used under the licence noted.
+These notices are provided to comply with those licences; they do not change
+the terms of the SPE Expert Amplifier Remote End-User Licence (EULA.txt).
+
+========================================================================
+Qt Framework
+Copyright (C) The Qt Company Ltd and other contributors.
+
+Used under the GNU Lesser General Public License, version 3 (LGPLv3).
+
+The Qt libraries are dynamically linked and are distributed as separate,
+user-replaceable shared-library files (e.g. the Qt6*.dll files alongside the
+application). You may replace them with compatible versions of your own.
+
+  - LGPLv3 full text:  https://www.gnu.org/licenses/lgpl-3.0.html
+  - GPLv3 full text:   https://www.gnu.org/licenses/gpl-3.0.html
+  - Corresponding Qt source for the version used: https://download.qt.io/
+  - Project website:   https://www.qt.io/
+
+========================================================================
+Web user-interface libraries
+
+AngularJS 1.6.4   Copyright (C) Google, Inc.            - MIT License
+jQuery 1.8.3      Copyright (C) The jQuery Foundation   - MIT License
+JustGage          Copyright (C) Bojan Djuricic          - MIT License
+Raphael 2.1.4     Copyright (C) Dmitry Baranovskiy      - MIT License
+
+MIT License:
+
+  Permission is hereby granted, free of charge, to any person obtaining a
+  copy of this software and associated documentation files (the "Software"),
+  to deal in the Software without restriction, including without limitation
+  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+  DEALINGS IN THE SOFTWARE.
+
+========================================================================
+OpenSSL (Windows builds)
+Copyright (C) The OpenSSL Project Authors.
+Used under the Apache License 2.0 (https://www.openssl.org/source/license.html).
+Distributed as separate, user-replaceable libraries (libssl / libcrypto).
+
+========================================================================
+Tailscale (optional - installed separately by the user)
+Tailscale is NOT distributed with this Software. It is a product of
+Tailscale Inc. and is used under its own terms; see https://tailscale.com/.
