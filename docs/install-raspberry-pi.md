@@ -164,6 +164,29 @@ curl -sSL https://raw.githubusercontent.com/lmacc/SPE-Expert-Amplifier-Remote-Co
 
 To pin a specific release: `sudo SPE_TAG=v1.9.5 bash <(curl -sSL …)`.
 
+## Uninstalling
+
+One-shot removal (matches the one-shot install):
+
+```bash
+curl -sSL https://raw.githubusercontent.com/lmacc/SPE-Expert-Amplifier-Remote-Console/main/scripts/uninstall-pi.sh \
+  | sudo bash
+```
+
+That stops + disables the systemd service, removes the unit, the binary
+symlink (`/usr/local/bin/spe-remoted`), and the install directory
+(`/opt/spe-remote`). Your **config + any TLS certificates** under
+`/var/lib/spe-remote/` are **kept**, so a later re-install picks up where you
+left off. To wipe those too:
+
+```bash
+curl -sSL …/uninstall-pi.sh | sudo bash -s -- --purge
+```
+
+The script leaves the runtime Qt 6 libraries and your `dialout` group
+membership in place — other apps may depend on them. Remove them by hand if
+you're sure they're unused.
+
 ## Troubleshooting
 
 - **Service won't start** — `journalctl -u spe-remoted -e`; check the binary
