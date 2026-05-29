@@ -101,19 +101,38 @@ EXPECTED_SHA=$(printf '%s' "$RELEASE_JSON" \
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 ARCHIVE="$TMP/$ASSET_NAME"
-log "Downloading $ASSET_NAME …"
-curl -fsSL -A 'spe-remote-installer' -o "$ARCHIVE" "$ASSET_URL"
 
-if [[ -n "$EXPECTED_SHA" ]]; then
-    ACTUAL_SHA=$(sha256sum "$ARCHIVE" | awk '{print $1}')
-    [[ "$ACTUAL_SHA" == "$EXPECTED_SHA" ]] \
-        || die "SHA-256 mismatch:
-  expected $EXPECTED_SHA
-  got      $ACTUAL_SHA"
-    ok "SHA-256 verified."
-else
-    warn "Release has no digest field — skipping SHA-256 check."
-fi
+# Try up to 3 times. On a flaky Wi-Fi link the download occasionally arrives
+# truncated; the SHA-256 check catches it and we retry instead of giving up.
+DOWNLOAD_OK=0
+for attempt in 1 2 3; do
+    log "Downloading $ASSET_NAME (attempt $attempt/3) …"
+    rm -f "$ARCHIVE"
+    if curl -fsSL -A 'spe-remote-installer' \
+            --retry 3 --retry-delay 2 --connect-timeout 30 \
+            -o "$ARCHIVE" "$ASSET_URL"; then
+        if [[ -z "$EXPECTED_SHA" ]]; then
+            warn "Release has no digest field — skipping SHA-256 check."
+            DOWNLOAD_OK=1
+            break
+        fi
+        ACTUAL_SHA=$(sha256sum "$ARCHIVE" | awk '{print $1}')
+        if [[ "$ACTUAL_SHA" == "$EXPECTED_SHA" ]]; then
+            ok "SHA-256 verified."
+            DOWNLOAD_OK=1
+            break
+        fi
+        warn "SHA-256 mismatch on attempt $attempt — download was likely truncated."
+        warn "  expected $EXPECTED_SHA"
+        warn "  got      $ACTUAL_SHA"
+    else
+        warn "Download failed on attempt $attempt (curl exit code $?)."
+    fi
+    [[ $attempt -lt 3 ]] && sleep 2
+done
+
+[[ "$DOWNLOAD_OK" == "1" ]] \
+    || die "Could not get a valid archive after 3 attempts. Check the network and try again."
 
 # Stop the service first so we don't replace a busy binary (upgrade path).
 if systemctl is-active --quiet spe-remoted 2>/dev/null; then
