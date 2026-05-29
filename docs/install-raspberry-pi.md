@@ -15,29 +15,67 @@ On a headless Pi you run the **daemon** (`spe-remoted`) — same engine as the
 desktop app, no screen needed. You configure it (serial port, model, HTTPS)
 entirely from the **web Settings page** in your browser.
 
-## 1. Install the daemon
+## Prerequisites
 
-SSH into the Pi, then:
+- **64-bit Raspberry Pi OS** (Bookworm or later). There's no prebuilt 32-bit
+  binary — use 64-bit Pi OS. (Works equally on any 64-bit Debian/Ubuntu.)
+- **Runtime Qt 6 libraries.** The one-shot installer below installs them
+  automatically. If you're installing by hand, they are:
+  ```bash
+  sudo apt update
+  sudo apt install -y libqt6core6 libqt6network6 libqt6serialport6 \
+                      libqt6websockets6 libqt6httpserver6
+  ```
+
+## 1. One-shot install (recommended)
+
+SSH into the Pi and run:
 
 ```bash
-# Pick your arch: arm64 (64-bit Pi OS, recommended) shown here.
-curl -fsSL -o spe.tar.gz \
-  https://github.com/lmacc/SPE-Expert-Amplifier-Remote-Console/releases/latest/download/spe-remote-qt-<version>-linux-arm64.tar.gz
+curl -sSL https://raw.githubusercontent.com/lmacc/SPE-Expert-Amplifier-Remote-Console/main/scripts/install-pi.sh \
+  | sudo bash
+```
+
+That single command:
+- Installs the runtime Qt 6 libraries.
+- Downloads the latest prebuilt daemon from the [Releases page](../../releases/latest)
+  (verifying the SHA-256 when the release publishes one).
+- Extracts it to `/opt/spe-remote/` and symlinks `/usr/local/bin/spe-remoted`.
+- Adds your user to the `dialout` group (serial access).
+- Drops in a sandboxed **systemd service** (`spe-remoted.service`) and starts it.
+
+When it finishes you'll see the Pi's IP and the URL to open. The web UI is now
+on **port 8080**, surviving reboots. Skip to [Step 3](#3-configure-it-from-your-browser).
+
+> **Useful overrides** (set before `sudo bash`):
+> - `SPE_TAG=v1.9.5` — pin to a specific release instead of the latest.
+> - `SPE_USER=mike` — run the service as this user instead of `$SUDO_USER` / `pi`.
+> - `SPE_INSTALL_DIR=/opt/spe` — install elsewhere than `/opt/spe-remote`.
+
+To **upgrade** later, just re-run the same command — the script stops the
+service, replaces the files, and starts it again.
+
+### Or — install manually
+
+If you'd rather do it by hand: install the prerequisites above, then:
+
+```bash
 sudo mkdir -p /opt/spe-remote
-sudo tar -xzf spe.tar.gz -C /opt/spe-remote --strip-components=1
+curl -fsSL -o /tmp/spe.tar.gz \
+  https://github.com/lmacc/SPE-Expert-Amplifier-Remote-Console/releases/latest/download/spe-remote-qt-<version>-linux-arm64.tar.gz
+sudo tar -xzf /tmp/spe.tar.gz -C /opt/spe-remote --strip-components=1
+sudo ln -sf /opt/spe-remote/spe-remoted /usr/local/bin/spe-remoted
+sudo usermod -aG dialout "$USER"        # log out / in after this
 ```
 
-> Replace `<version>` with the latest (see the [Releases page](../../releases/latest)).
-> 32-bit Pi OS: there's no prebuilt 32-bit binary — use 64-bit Pi OS.
+(Replace `<version>` with the latest from the [Releases page](../../releases/latest).
+For Intel/AMD use `linux-x64` in place of `linux-arm64`.)
 
-Add the `pi` user to the serial group (one-time), then re-login:
-```bash
-sudo usermod -aG dialout pi
-```
+## 2. Run it as a service (manual install only)
 
-## 2. Run it as a service (starts on boot)
+The one-shot installer above already did this for you — skip to Step 3.
 
-Create `/etc/systemd/system/spe-remoted.service`:
+If you installed by hand, create `/etc/systemd/system/spe-remoted.service`:
 
 ```ini
 [Unit]
@@ -46,9 +84,14 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/opt/spe-remote/spe-remoted
-Restart=on-failure
+Type=simple
 User=pi
+Group=dialout
+Environment=XDG_CONFIG_HOME=/var/lib/spe-remote
+StateDirectory=spe-remote
+ExecStart=/usr/local/bin/spe-remoted
+Restart=on-failure
+RestartSec=3
 
 [Install]
 WantedBy=multi-user.target
@@ -111,11 +154,15 @@ One-click from another PC: **[SPE Remote Connect](connect-remote-and-phone.md)**
 
 ## Updating
 
+Just re-run the one-shot installer — it stops the service, replaces the files,
+restores ownership, and starts it again:
+
 ```bash
-sudo systemctl stop spe-remoted
-# download the new tarball as in Step 1, extract over /opt/spe-remote
-sudo systemctl start spe-remoted
+curl -sSL https://raw.githubusercontent.com/lmacc/SPE-Expert-Amplifier-Remote-Console/main/scripts/install-pi.sh \
+  | sudo bash
 ```
+
+To pin a specific release: `sudo SPE_TAG=v1.9.5 bash <(curl -sSL …)`.
 
 ## Troubleshooting
 

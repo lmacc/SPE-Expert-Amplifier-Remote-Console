@@ -21,11 +21,19 @@ instead (same idea, configured from the browser).
    ./spe-remote-qt
    ```
 
-It uses your system Qt 6. If it complains about a missing library, install Qt 6
-base from your distro, e.g. on Debian/Ubuntu:
+The prebuilt binaries dynamically link your system Qt 6. Install the runtime
+libraries first (Debian / Ubuntu / Mint / Pi OS):
+
 ```bash
-sudo apt install libqt6widgets6 libqt6serialport6 libqt6websockets6
+sudo apt update
+sudo apt install -y \
+    libqt6core6 libqt6gui6 libqt6widgets6 libqt6network6 \
+    libqt6serialport6 libqt6websockets6 libqt6httpserver6
 ```
+
+(On a headless server with no display you only need the daemon — see the
+[Raspberry Pi guide](install-raspberry-pi.md), which drops the GUI libs and adds
+a one-shot installer + systemd setup.)
 
 ## 2. Serial port permission (one-time)
 
