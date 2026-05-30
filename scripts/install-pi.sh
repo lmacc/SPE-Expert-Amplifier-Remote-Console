@@ -175,6 +175,17 @@ ok "Binary runs: $out"
 log "Adding $TARGET_USER to the dialout group (serial access) …"
 usermod -a -G dialout "$TARGET_USER" || true
 
+# If Tailscale is on this host, designate the daemon user as the Tailscale
+# operator so the "Get Tailscale cert" button on the web Settings page can
+# call `tailscale cert` without root. The daemon runs unprivileged under
+# systemd; without this it gets "Access denied: cert access denied" and the
+# user has to run this same command by hand. Idempotent; safe to re-run.
+if command -v tailscale >/dev/null 2>&1; then
+    log "Setting $TARGET_USER as Tailscale operator (for cert fetch from the web UI) …"
+    tailscale set --operator="$TARGET_USER" \
+        || warn "tailscale set --operator failed; the cert button in the web UI may need 'sudo tailscale set --operator=$TARGET_USER' run manually."
+fi
+
 log "Writing $SERVICE_DST"
 cat > "$SERVICE_DST" <<EOF
 [Unit]
