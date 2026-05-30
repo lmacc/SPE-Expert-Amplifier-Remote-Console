@@ -51,12 +51,13 @@ log "Architecture: $ARCH   service user: $TARGET_USER"
 # Runtime Qt 6 libraries the prebuilt daemon links against (dynamic).
 # These are the only runtime deps; no GUI / no widgets needed.
 # ------------------------------------------------------------------- #
-log "Installing runtime Qt 6 libraries (apt) …"
+log "Installing prerequisites (apt) …"
+# The tarball bundles its own Qt 6 (libs + tls plugin) under lib/ next to
+# the binary, so we don't need system Qt packages — the daemon uses the
+# bundled libraries via RPATH regardless of what the distro ships.
 apt-get update -qq
 apt-get install -y --no-install-recommends \
     curl ca-certificates tar \
-    libqt6core6 libqt6network6 libqt6serialport6 \
-    libqt6websockets6 libqt6httpserver6 \
     >/dev/null
 
 # ------------------------------------------------------------------- #

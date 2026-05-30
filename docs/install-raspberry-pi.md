@@ -19,13 +19,11 @@ entirely from the **web Settings page** in your browser.
 
 - **64-bit Raspberry Pi OS** (Bookworm or later). There's no prebuilt 32-bit
   binary — use 64-bit Pi OS. (Works equally on any 64-bit Debian/Ubuntu.)
-- **Runtime Qt 6 libraries.** The one-shot installer below installs them
-  automatically. If you're installing by hand, they are:
-  ```bash
-  sudo apt update
-  sudo apt install -y libqt6core6 libqt6network6 libqt6serialport6 \
-                      libqt6websockets6 libqt6httpserver6
-  ```
+- **No Qt install needed.** The tarball ships its **own** Qt 6 libraries
+  alongside the binary (`lib/` and `plugins/`), so the daemon doesn't depend
+  on whatever Qt version the system happens to have — useful because Qt
+  HttpServer is a Technical Preview module with no ABI guarantee between
+  patch levels.
 
 ## 1. One-shot install (recommended)
 
