@@ -14,7 +14,38 @@ Supports the **SPE Expert 1K-FA** and the **1.3K-FA / 1.5K-FA / 2K-FA** family.
 
 ---
 
-## How it looks to you (the big picture)
+## What it looks like
+
+**Native desktop app** — Windows shown; the same UI runs on macOS and Linux.
+Mirrors the real SPE front panel and talks to the amplifier over USB.
+
+![SPE Remote desktop app on Windows](docs/images/desktop-app-windows.png)
+
+**Browser UI — Expert 1K-FA.** Same control panel served as a web page by the
+daemon running next to the amp. Meters scale to the 1K-FA's 1000 W / 25 A range.
+
+![Browser UI for the 1K-FA](docs/images/1K-FA-webserver.png)
+
+**Browser UI — Expert 1.3K-FA / 1.5K-FA / 2K-FA.** Same page, with meters
+scaled to the 2 kW family's 2000 W / 50 A range. The amp model is picked once
+on the Settings page; the UI relabels itself automatically.
+
+![Browser UI for the 1.3K–2K-FA](docs/images/1.3K-2K-FA-webserver.png)
+
+**On a phone** — the web UI lays itself out vertically on a narrow screen,
+so you can run the amp from a phone over Tailscale with no extra app.
+
+![SPE Remote on Android](docs/images/phoneshot.jpg)
+
+**Settings page** — pick the serial port and amp model, and turn on
+browser-trusted HTTPS in one click using your Tailscale MagicDNS name.
+Everything saves to the daemon's config and survives reboots.
+
+![Settings page](docs/images/settings.png)
+
+---
+
+## How it connects (the big picture)
 
 You run the **SPE Remote** app on a PC (or Raspberry Pi) connected to the
 amplifier by USB. That app serves a control panel. **Tailscale** then wraps the
