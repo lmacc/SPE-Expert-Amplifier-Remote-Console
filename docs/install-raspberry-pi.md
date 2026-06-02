@@ -30,7 +30,7 @@ entirely from the **web Settings page** in your browser.
 SSH into the Pi and run:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/lmacc/SPE-Expert-Amplifier-Remote-Console/main/scripts/install-pi.sh \
+curl -sSL https://github.com/lmacc/SPE-Expert-Amplifier-Remote-Console/releases/latest/download/install.sh \
   | sudo bash
 ```
 
@@ -156,7 +156,7 @@ Just re-run the one-shot installer — it stops the service, replaces the files,
 restores ownership, and starts it again:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/lmacc/SPE-Expert-Amplifier-Remote-Console/main/scripts/install-pi.sh \
+curl -sSL https://github.com/lmacc/SPE-Expert-Amplifier-Remote-Console/releases/latest/download/install.sh \
   | sudo bash
 ```
 
@@ -167,7 +167,7 @@ To pin a specific release: `sudo SPE_TAG=v1.9.5 bash <(curl -sSL …)`.
 One-shot removal (matches the one-shot install):
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/lmacc/SPE-Expert-Amplifier-Remote-Console/main/scripts/uninstall-pi.sh \
+curl -sSL https://github.com/lmacc/SPE-Expert-Amplifier-Remote-Console/releases/latest/download/uninstall-pi.sh \
   | sudo bash
 ```
 

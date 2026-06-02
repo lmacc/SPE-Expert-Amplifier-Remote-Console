@@ -8,7 +8,7 @@
 # latest release.
 #
 # Usage:
-#   curl -sSL https://raw.githubusercontent.com/lmacc/SPE-Expert-Amplifier-Remote-Console/main/scripts/install.sh | sudo bash
+#   curl -sSL https://github.com/lmacc/SPE-Expert-Amplifier-Remote-Console/releases/latest/download/install.sh | sudo bash
 #
 #   sudo bash install.sh        # from a local copy
 #
@@ -173,10 +173,14 @@ chown -R "$TARGET_USER":"$TARGET_USER" "$INSTALL_DIR"
 
 ln -sf "$INSTALL_DIR/spe-remoted" "$BIN_LINK"
 
-# Pull the spe-config helper too — same release, same repo. Don't fail the
-# install if it isn't there yet (older releases won't have it).
-CONFIG_URL="https://raw.githubusercontent.com/$REPO/main/scripts/spe-config.sh"
-if curl -fsSL -o /usr/local/bin/spe-config "$CONFIG_URL" 2>/dev/null; then
+# Pull the spe-config helper from the SAME release we just installed, so
+# script + binary stay in lock-step. Older releases (pre-v1.9.13) don't ship
+# this asset; fall back to the main-branch raw URL for those, and don't fail
+# the install if it isn't found either way.
+CONFIG_URL_VER="https://github.com/$REPO/releases/download/$NEW_TAG/spe-config.sh"
+CONFIG_URL_RAW="https://raw.githubusercontent.com/$REPO/main/scripts/spe-config.sh"
+if curl -fsSL -o /usr/local/bin/spe-config "$CONFIG_URL_VER" 2>/dev/null \
+    || curl -fsSL -o /usr/local/bin/spe-config "$CONFIG_URL_RAW" 2>/dev/null; then
     chmod 0755 /usr/local/bin/spe-config
     ok "Installed spe-config helper → run 'sudo spe-config' to change ports or enable HTTPS."
 fi
