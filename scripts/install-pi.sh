@@ -17,6 +17,9 @@
 #   SPE_USER=mike                Service runs as this user (default: $SUDO_USER or pi).
 #   SPE_INSTALL_DIR=/opt/X       Install path (default: /opt/spe-remote).
 #   SPE_KEEP_CONFIG=0            Wipe saved config too (default: 1, keep it).
+#   SPE_HTTP_PORT=8081           Initial HTTP port (default: 8081 — avoids clash
+#                                with TS-890S Webserver default 8080).
+#   SPE_WS_PORT=8889             Initial WebSocket port (default: 8889).
 #
 set -euo pipefail
 
@@ -28,6 +31,11 @@ SERVICE_DST="/etc/systemd/system/spe-remoted.service"
 BIN_LINK="/usr/local/bin/spe-remoted"
 TARGET_USER="${SPE_USER:-${SUDO_USER:-pi}}"
 KEEP_CONFIG="${SPE_KEEP_CONFIG:-1}"
+# Default to 8081/8889 instead of the daemon's compile-time 8080/8888, so a
+# fresh install doesn't fight a TS-890S Webserver (8080/8073) running on the
+# same Pi. Users can override via env vars or change them later via spe-config.
+SPE_HTTP_PORT="${SPE_HTTP_PORT:-8081}"
+SPE_WS_PORT="${SPE_WS_PORT:-8889}"
 
 # ------------------------------------------------------------------- #
 log()  { printf '\033[36m[install]\033[0m %s\n' "$*"; }
@@ -243,6 +251,28 @@ EOF
 chmod 0644 "$SERVICE_DST"
 
 systemctl daemon-reload
+
+# Pre-seed config.json with non-default ports before the daemon ever starts,
+# so it binds 8081/8889 on first boot. Only do this if no config exists yet
+# (preserves the user's ports across re-installs / upgrades). Qt resolves
+# AppConfigLocation = $XDG_CONFIG_HOME/$orgName/$appName/, with orgName
+# "spe-remote" and appName "spe-remoted" — that's why this path looks doubly
+# nested.
+CFG_DIR="$STATE_DIR/spe-remote/spe-remoted"
+CFG_FILE="$CFG_DIR/config.json"
+if [[ ! -f "$CFG_FILE" ]]; then
+    log "Seeding config.json with HTTP=$SPE_HTTP_PORT, WS=$SPE_WS_PORT (no TS-890S clash) …"
+    mkdir -p "$CFG_DIR"
+    python3 - "$CFG_FILE" "$SPE_HTTP_PORT" "$SPE_WS_PORT" <<'PY'
+import json, sys
+path, http_port, ws_port = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+with open(path, "w") as f:
+    json.dump({"http_port": http_port, "ws_port": ws_port}, f, indent=2, sort_keys=True)
+    f.write("\n")
+PY
+    chown -R "$TARGET_USER:$TARGET_USER" "$STATE_DIR"
+fi
+
 systemctl enable --now spe-remoted
 
 # ------------------------------------------------------------------- #
@@ -254,8 +284,8 @@ echo "  Status:        systemctl status spe-remoted"
 echo "  Live logs:     journalctl -u spe-remoted -f"
 echo "  Configure:     sudo spe-config              # change ports, enable Tailscale HTTPS, add instances"
 echo
-echo "  Browser UI:    http://${IP:-<this-host-ip>}:8080/"
-echo "  Settings page: http://${IP:-<this-host-ip>}:8080/settings.html"
+echo "  Browser UI:    http://${IP:-<this-host-ip>}:${SPE_HTTP_PORT}/"
+echo "  Settings page: http://${IP:-<this-host-ip>}:${SPE_HTTP_PORT}/settings.html"
 echo
 echo "  Tailscale + trusted HTTPS guide:"
 echo "    https://github.com/$REPO/blob/main/docs/tailscale-setup.md"
