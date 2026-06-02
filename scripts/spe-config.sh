@@ -211,110 +211,133 @@ change_port() {
 }
 
 # ------------------------------------------------------------------- #
-# Action: enable Let's Encrypt HTTPS for an instance.
-# Requires:
-#   - A public DNS name pointing at this host's public IP
-#   - Port 80 reachable inbound (for the HTTP-01 challenge)
-# Installs certbot, runs --standalone, copies the cert+key to a
-# daemon-readable spot, installs a deploy hook for renewals, points the
-# daemon at the copies, restarts.
+# Action: enable HTTPS for this instance via `tailscale serve`.
+# This runs a reverse proxy on the host's Tailscale node that mounts:
+#   https://<tailnet>:<https_port>/    →  http://localhost:<http_port>
+#   https://<tailnet>:<https_port>/ws  →  http://localhost:<ws_port>
+# Tailscale provisions a real, browser-trusted Let's Encrypt cert for the
+# tailnet name automatically (30-60 s on first use). No public DNS, no
+# port 80 inbound, no certbot, no deploy hooks. Survives reboots; renews
+# itself. Stacks cleanly with other services (e.g. a TS-890S webserver)
+# by putting them on different HTTPS ports.
 # ------------------------------------------------------------------- #
-enable_letsencrypt() {
+tailnet_name() {
+    tailscale status --json 2>/dev/null \
+        | grep -m1 '"DNSName"' \
+        | sed -E 's/.*"DNSName":\s*"([^"]+)\.".*/\1/' \
+        || echo ""
+}
+
+# Wrapper for `tailscale serve`: the CLI flag syntax changed across versions
+# (1.50+ uses --set-path; older builds accept a positional path). Try the
+# modern form first, fall through to the legacy form on failure.
+ts_serve_add() {
+    local https_port="$1" path="$2" target="$3"
+    tailscale serve --bg --https="$https_port" --set-path="$path" "$target" 2>/dev/null \
+        && return 0
+    tailscale serve --bg --https="$https_port"                 "$path" "$target" 2>/dev/null \
+        && return 0
+    tailscale serve https / "$target"
+}
+ts_serve_remove() {
+    local https_port="$1" path="$2"
+    tailscale serve --https="$https_port" --set-path="$path" off 2>/dev/null || true
+    tailscale serve --https="$https_port"                 "$path" off 2>/dev/null || true
+}
+
+enable_tailscale_https() {
     local unit="$1"
     local cfg="$(instance_config_path "$unit")"
-    local state="$(instance_state_dir "$unit")"
-    local svc_user
-    svc_user="$(systemctl show -p User --value "$unit")"
-    [[ -z "$svc_user" || "$svc_user" == "[not set]" ]] && svc_user="$TARGET_USER_DEFAULT"
 
-    echo
-    echo "Let's Encrypt issues free, browser-trusted certificates."
-    echo "Requirements:"
-    echo "  1. A public DNS name (e.g. mypi.example.com) pointing at THIS host's public IP."
-    echo "  2. Port 80 reachable from the internet for ~30 seconds during the challenge."
-    echo "     (After issuance you can close port 80 again — renewals reopen it briefly.)"
-    echo
-    printf "Hostname (e.g. mypi.example.com): "
-    local host; read -r host
-    [[ -n "$host" ]] || die "Hostname is required."
-    printf "Contact email (used by Let's Encrypt for expiry warnings): "
-    local email; read -r email
-    [[ -n "$email" ]] || die "Email is required."
-
-    if ! command -v certbot >/dev/null; then
-        log "Installing certbot (apt) …"
-        apt-get update -qq
-        apt-get install -y --no-install-recommends certbot >/dev/null
+    if ! command -v tailscale >/dev/null; then
+        warn "Tailscale isn't installed on this host. Install it first:"
+        echo "    curl -fsSL https://tailscale.com/install.sh | sh"
+        echo "    sudo tailscale up"
+        return
+    fi
+    if ! tailscale status >/dev/null 2>&1; then
+        warn "Tailscale is installed but not signed in. Run 'sudo tailscale up' first."
+        return
     fi
 
-    # Stop the instance only if it's currently listening on port 80 — usually
-    # it isn't, but certbot --standalone needs port 80 free either way.
-    log "Asking certbot to issue a certificate for $host …"
-    certbot certonly --standalone --preferred-challenges http \
-        -d "$host" --email "$email" \
-        --agree-tos --no-eff-email --non-interactive \
-        || die "certbot failed. Check that '$host' resolves to this host's public IP and port 80 is reachable."
+    local http_port="$(cfg_read "$cfg" http_port 8080)"
+    local ws_port="$(cfg_read   "$cfg" ws_port   8888)"
+    local name; name="$(tailnet_name)"
+    [[ -n "$name" ]] || { warn "Couldn't determine this host's tailnet name."; return; }
 
-    local le_dir="/etc/letsencrypt/live/$host"
-    [[ -f "$le_dir/fullchain.pem" && -f "$le_dir/privkey.pem" ]] \
-        || die "Cert not found at $le_dir after certbot — aborting."
+    # Pick an HTTPS port. 443 is the obvious default; if it's already in use
+    # by another `tailscale serve` mount, ask for a different one.
+    local in_use_443
+    in_use_443="$(tailscale serve status 2>/dev/null | grep -c 'https://[^ ]*:443' || true)"
+    local default_port=443
+    if [[ "$in_use_443" -gt 0 ]]; then
+        default_port=8443
+        warn "HTTPS port 443 already has a tailscale serve mount — using $default_port for this instance."
+    fi
+    printf "Tailscale HTTPS port to use [%d]: " "$default_port"
+    local https_port; read -r https_port
+    https_port="${https_port:-$default_port}"
+    [[ "$https_port" =~ ^[0-9]+$ ]] && (( https_port >= 1 && https_port <= 65535 )) \
+        || die "Invalid HTTPS port."
 
-    # Copy the cert+key to a daemon-readable location. /etc/letsencrypt/{live,archive}
-    # are mode 0700 root:root by default, which means the unprivileged daemon
-    # can't read privkey.pem directly. The deploy hook below keeps these in sync.
-    local dest_dir="$state/tls/letsencrypt"
-    mkdir -p "$dest_dir"
-    cp -L "$le_dir/fullchain.pem" "$dest_dir/$host.crt"
-    cp -L "$le_dir/privkey.pem"   "$dest_dir/$host.key"
-    chown -R "$svc_user:$svc_user" "$dest_dir"
-    chmod 0640 "$dest_dir/$host.crt" "$dest_dir/$host.key"
-
-    # Install a renewal deploy hook that mirrors the same copy + reload after
-    # every certbot renewal. certbot runs this only when it actually renews,
-    # so the daemon doesn't get pointlessly restarted every day.
-    local hook="/etc/letsencrypt/renewal-hooks/deploy/spe-remoted-${unit%.service}.sh"
-    mkdir -p "$(dirname "$hook")"
-    cat > "$hook" <<EOF
-#!/usr/bin/env bash
-# Auto-generated by spe-config for unit: $unit, host: $host.
-set -euo pipefail
-case "\$RENEWED_LINEAGE" in
-    */live/$host) ;;
-    *) exit 0 ;;
-esac
-DEST="$dest_dir"
-cp -L "\$RENEWED_LINEAGE/fullchain.pem" "\$DEST/$host.crt"
-cp -L "\$RENEWED_LINEAGE/privkey.pem"   "\$DEST/$host.key"
-chown $svc_user:$svc_user "\$DEST/$host.crt" "\$DEST/$host.key"
-chmod 0640 "\$DEST/$host.crt" "\$DEST/$host.key"
-systemctl restart $unit
-EOF
-    chmod 0755 "$hook"
-
-    # Point the daemon at the new cert+key, then restart.
-    mkdir -p "$(dirname "$cfg")"
-    chown -R "$svc_user:$svc_user" "$state"
-    cfg_write "$cfg" "cert_file=$dest_dir/$host.crt" "key_file=$dest_dir/$host.key"
-    chown "$svc_user:$svc_user" "$cfg"
-    systemctl restart "$unit"
-
-    local port="$(cfg_read "$cfg" http_port 8080)"
+    local url_root
+    if [[ "$https_port" == 443 ]]; then url_root="https://${name}"
+    else                                url_root="https://${name}:${https_port}"
+    fi
     echo
-    ok "Let's Encrypt enabled for $host on $unit."
-    echo "  Browse to: https://$host:$port/"
-    echo "  Renewal hook: $hook (runs automatically after each certbot renewal)"
+    echo "About to configure:"
+    echo "  ${url_root}/    →  http://localhost:${http_port}    (web UI)"
+    echo "  ${url_root}/ws  →  http://localhost:${ws_port}      (websocket)"
+    echo
+    echo "Tailscale will fetch a real Let's Encrypt cert for ${name} on first"
+    echo "use (30-60 seconds). No public DNS or port 80 needed."
+    echo
+    printf "Proceed? [Y/n]: "
+    local yn; read -r yn
+    [[ "${yn,,}" == "n" ]] && { echo "Aborted."; return; }
+
+    log "Adding tailscale serve mounts …"
+    ts_serve_add "$https_port" "/"   "http://localhost:${http_port}" \
+        || die "tailscale serve failed for / — see 'sudo tailscale serve status'."
+    ts_serve_add "$https_port" "/ws" "http://localhost:${ws_port}" \
+        || warn "WS mount failed — root mount is up. Check 'sudo tailscale serve status'."
+
+    echo
+    ok "Tailscale HTTPS enabled for $unit."
+    echo "  Open: ${url_root}/"
+    if command -v qrencode >/dev/null 2>&1; then
+        echo
+        qrencode -t ANSI256 -m 1 "${url_root}/"
+    else
+        echo "  (install 'qrencode' to also print a QR for your phone:  sudo apt install qrencode)"
+    fi
     echo
 }
 
-# ------------------------------------------------------------------- #
-# Action: turn HTTPS off (clear cert paths).
-# ------------------------------------------------------------------- #
-disable_https() {
+disable_tailscale_https() {
     local unit="$1"
+    if ! command -v tailscale >/dev/null; then
+        warn "Tailscale isn't installed — nothing to remove."; return
+    fi
     local cfg="$(instance_config_path "$unit")"
-    cfg_write "$cfg" "cert_file=" "key_file="
-    ok "HTTPS disabled on $unit — restarting …"
-    systemctl restart "$unit"
+    local http_port="$(cfg_read "$cfg" http_port 8080)"
+
+    # Find every HTTPS port whose mount targets this instance's HTTP port.
+    local matches
+    matches="$(tailscale serve status 2>/dev/null \
+                | grep -E "https://[^ ]+:[0-9]+/(ws)?[[:space:]]" \
+                | awk -v t="http://localhost:${http_port}" '$0 ~ t {print $1}' \
+                | grep -oE ':[0-9]+/' | tr -d ':/' | sort -u)"
+    if [[ -z "$matches" ]]; then
+        warn "No tailscale serve mount points at http://localhost:${http_port} — nothing to remove."
+        return
+    fi
+    for p in $matches; do
+        log "Removing tailscale serve mounts on HTTPS port $p …"
+        ts_serve_remove "$p" "/"
+        ts_serve_remove "$p" "/ws"
+    done
+    ok "Tailscale HTTPS removed for $unit."
 }
 
 # ------------------------------------------------------------------- #
@@ -430,8 +453,8 @@ main_menu() {
 What would you like to do?
   1) Change HTTP port
   2) Change WebSocket port
-  3) Enable Let's Encrypt HTTPS (public hostname required)
-  4) Disable HTTPS
+  3) Enable HTTPS via Tailscale Serve (browser-trusted padlock, no public DNS)
+  4) Disable Tailscale HTTPS (remove the serve mounts for this instance)
   5) Restart this instance
   6) Show live logs (Ctrl-C to stop)
   7) Switch to a different instance
@@ -444,8 +467,8 @@ MENU
         case "$ch" in
             1) change_port "$unit" http_port "HTTP" ;;
             2) change_port "$unit" ws_port   "WebSocket" ;;
-            3) enable_letsencrypt "$unit" ;;
-            4) disable_https "$unit" ;;
+            3) enable_tailscale_https  "$unit" ;;
+            4) disable_tailscale_https "$unit" ;;
             5) systemctl restart "$unit" && ok "Restarted." ;;
             6) journalctl -u "$unit" -f ;;
             7) unit="$(pick_instance)" ;;

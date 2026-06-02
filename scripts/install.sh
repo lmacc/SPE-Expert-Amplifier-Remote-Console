@@ -170,7 +170,7 @@ ln -sf "$INSTALL_DIR/spe-remoted" "$BIN_LINK"
 CONFIG_URL="https://raw.githubusercontent.com/$REPO/main/scripts/spe-config.sh"
 if curl -fsSL -o /usr/local/bin/spe-config "$CONFIG_URL" 2>/dev/null; then
     chmod 0755 /usr/local/bin/spe-config
-    ok "Installed spe-config helper → run 'sudo spe-config' to change ports or enable Let's Encrypt."
+    ok "Installed spe-config helper → run 'sudo spe-config' to change ports or enable HTTPS."
 fi
 
 # ------------------------------------------------------------------- #
@@ -252,7 +252,7 @@ ok "spe-remoted $NEW_TAG is installed and running as user '$TARGET_USER'."
 echo
 echo "  Status:        systemctl status spe-remoted"
 echo "  Live logs:     journalctl -u spe-remoted -f"
-echo "  Configure:     sudo spe-config              # change ports, add Let's Encrypt, more"
+echo "  Configure:     sudo spe-config              # change ports, enable Tailscale HTTPS, add instances"
 echo
 echo "  Browser UI:    http://${IP:-<this-host-ip>}:8080/"
 echo "  Settings page: http://${IP:-<this-host-ip>}:8080/settings.html"
