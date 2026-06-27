@@ -110,6 +110,24 @@ with open(path, "w") as f:
 PY
 }
 
+cfg_delete() {  # cfg_delete <path> <key>…  (removes keys if present)
+    local path="$1"; shift
+    [[ -f "$path" ]] || return 0
+    python3 - "$path" "$@" <<'PY'
+import json, sys
+path, *keys = sys.argv[1:]
+try:
+    with open(path) as f: d = json.load(f)
+except Exception:
+    sys.exit(0)
+for k in keys:
+    d.pop(k, None)
+with open(path, "w") as f:
+    json.dump(d, f, indent=2, sort_keys=True)
+    f.write("\n")
+PY
+}
+
 # ------------------------------------------------------------------- #
 # Pick an instance: prompts if there's more than one, returns the unit
 # name on stdout. Echoes status to stderr only.
@@ -314,30 +332,50 @@ enable_tailscale_https() {
     echo
 }
 
-disable_tailscale_https() {
+disable_https() {
     local unit="$1"
-    if ! command -v tailscale >/dev/null; then
-        warn "Tailscale isn't installed — nothing to remove."; return
-    fi
     local cfg="$(instance_config_path "$unit")"
     local http_port="$(cfg_read "$cfg" http_port 8080)"
+    local changed=0
 
-    # Find every HTTPS port whose mount targets this instance's HTTP port.
-    local matches
-    matches="$(tailscale serve status 2>/dev/null \
-                | grep -E "https://[^ ]+:[0-9]+/(ws)?[[:space:]]" \
-                | awk -v t="http://localhost:${http_port}" '$0 ~ t {print $1}' \
-                | grep -oE ':[0-9]+/' | tr -d ':/' | sort -u)"
-    if [[ -z "$matches" ]]; then
-        warn "No tailscale serve mount points at http://localhost:${http_port} — nothing to remove."
+    # 1) Remove any Tailscale serve mounts that proxy to this instance.
+    if command -v tailscale >/dev/null; then
+        local matches
+        matches="$(tailscale serve status 2>/dev/null \
+                    | grep -E "https://[^ ]+:[0-9]+/(ws)?[[:space:]]" \
+                    | awk -v t="http://localhost:${http_port}" '$0 ~ t {print $1}' \
+                    | grep -oE ':[0-9]+/' | tr -d ':/' | sort -u)"
+        if [[ -n "$matches" ]]; then
+            for p in $matches; do
+                log "Removing tailscale serve mounts on HTTPS port $p …"
+                ts_serve_remove "$p" "/"
+                ts_serve_remove "$p" "/ws"
+            done
+            changed=1
+        fi
+    fi
+
+    # 2) Clear the daemon's NATIVE TLS (cert_file / key_file) from config.json.
+    # This is what actually decides whether the daemon binds HTTPS — the web UI
+    # cert fetch / setup-https set these, and removing serve mounts alone does
+    # NOT turn native TLS off. Without this step "Disable HTTPS" appears to do
+    # nothing: the daemon keeps serving HTTPS from the still-present cert/key.
+    local cert="$(cfg_read "$cfg" cert_file '')"
+    local key="$(cfg_read  "$cfg" key_file  '')"
+    if [[ -n "$cert" || -n "$key" ]]; then
+        log "Clearing native TLS cert/key from $cfg …"
+        cfg_delete "$cfg" cert_file key_file
+        chown -R "$(stat -c %U "$(instance_state_dir "$unit")")" "$(dirname "$cfg")" 2>/dev/null || true
+        changed=1
+    fi
+
+    if [[ "$changed" -eq 0 ]]; then
+        warn "HTTPS wasn't enabled for $unit (no serve mounts and no cert/key in config) — nothing to do."
         return
     fi
-    for p in $matches; do
-        log "Removing tailscale serve mounts on HTTPS port $p …"
-        ts_serve_remove "$p" "/"
-        ts_serve_remove "$p" "/ws"
-    done
-    ok "Tailscale HTTPS removed for $unit."
+
+    ok "HTTPS disabled for $unit — restarting so it serves plain HTTP on :${http_port} …"
+    systemctl restart "$unit"
 }
 
 # ------------------------------------------------------------------- #
@@ -454,7 +492,7 @@ What would you like to do?
   1) Change HTTP port
   2) Change WebSocket port
   3) Enable HTTPS via Tailscale Serve (browser-trusted padlock, no public DNS)
-  4) Disable Tailscale HTTPS (remove the serve mounts for this instance)
+  4) Disable HTTPS (clear native cert/key + remove Tailscale serve mounts)
   5) Restart this instance
   6) Show live logs (Ctrl-C to stop)
   7) Switch to a different instance
@@ -468,7 +506,7 @@ MENU
             1) change_port "$unit" http_port "HTTP" ;;
             2) change_port "$unit" ws_port   "WebSocket" ;;
             3) enable_tailscale_https  "$unit" ;;
-            4) disable_tailscale_https "$unit" ;;
+            4) disable_https "$unit" ;;
             5) systemctl restart "$unit" && ok "Restarted." ;;
             6) journalctl -u "$unit" -f ;;
             7) unit="$(pick_instance)" ;;
