@@ -246,6 +246,13 @@ RestrictSUIDSGID=true
 ReadOnlyPaths=/etc/letsencrypt
 DeviceAllow=/dev/ttyUSB0 rw
 DeviceAllow=/dev/ttyUSB1 rw
+DeviceAllow=/dev/ttyUSB2 rw
+DeviceAllow=/dev/ttyUSB3 rw
+# Newer amps (e.g. 1.5K-FA TAURUS) enumerate as USB-CDC devices, which
+# appear as /dev/ttyACM* rather than /dev/ttyUSB* — without these lines the
+# sandbox denies the port even though the web UI can still list it.
+DeviceAllow=/dev/ttyACM0 rw
+DeviceAllow=/dev/ttyACM1 rw
 DeviceAllow=/dev/ttyAMA0 rw
 DeviceAllow=/dev/serial0 rw
 
