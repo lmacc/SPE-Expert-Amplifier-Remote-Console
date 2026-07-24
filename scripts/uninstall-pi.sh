@@ -70,6 +70,20 @@ if [[ -f "$SERVICE_DST" ]]; then
     systemctl reset-failed spe-remoted 2>/dev/null || true
 fi
 
+# Drop the USB-serial module-preload the installer added (leaves the modules
+# loaded for this session; they're unloaded at the next reboot if unused).
+if [[ -f /etc/modules-load.d/spe-remote.conf ]]; then
+    log "Removing /etc/modules-load.d/spe-remote.conf"
+    rm -f /etc/modules-load.d/spe-remote.conf
+fi
+
+# Drop the ModemManager ignore rule for USB-serial adapters.
+if [[ -f /etc/udev/rules.d/99-spe-remote-mm.rules ]]; then
+    log "Removing /etc/udev/rules.d/99-spe-remote-mm.rules"
+    rm -f /etc/udev/rules.d/99-spe-remote-mm.rules
+    udevadm control --reload-rules 2>/dev/null || true
+fi
+
 # Catch any stray manual processes (e.g. someone ran ./spe-remoted by hand).
 if pgrep -x spe-remoted >/dev/null 2>&1; then
     log "Stopping stray spe-remoted process(es) …"

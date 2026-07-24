@@ -244,15 +244,17 @@ ProtectControlGroups=true
 RestrictSUIDSGID=true
 # Let the daemon read Let's Encrypt copies (configurable via spe-config).
 ReadOnlyPaths=/etc/letsencrypt
-DeviceAllow=/dev/ttyUSB0 rw
-DeviceAllow=/dev/ttyUSB1 rw
-DeviceAllow=/dev/ttyUSB2 rw
-DeviceAllow=/dev/ttyUSB3 rw
-# Newer amps (e.g. 1.5K-FA TAURUS) enumerate as USB-CDC devices, which
-# appear as /dev/ttyACM* rather than /dev/ttyUSB* — without these lines the
-# sandbox denies the port even though the web UI can still list it.
-DeviceAllow=/dev/ttyACM0 rw
-DeviceAllow=/dev/ttyACM1 rw
+# Allow USB-serial (ttyUSB*, char major 188) and USB-CDC (ttyACM*, char major
+# 166) devices by device GROUP, not by fixed node path. A DeviceAllow=/dev/...
+# path is resolved to a single major:minor at unit-start time, so if the
+# adapter isn't plugged in when the service starts — or is replugged as a
+# different ttyUSBn — the sandbox denies the port with "Operation not
+# permitted" (EPERM) even though the web UI still lists it. The char-ttyUSB /
+# char-ttyACM groups cover every such node regardless of plug order or which
+# number it enumerates as.
+DeviceAllow=char-ttyUSB rw
+DeviceAllow=char-ttyACM rw
+# On-board GPIO UART (Raspberry Pi) — present from boot, so a node path is fine.
 DeviceAllow=/dev/ttyAMA0 rw
 DeviceAllow=/dev/serial0 rw
 
@@ -260,6 +262,35 @@ DeviceAllow=/dev/serial0 rw
 WantedBy=multi-user.target
 EOF
 chmod 0644 "$SERVICE_DST"
+
+# Register the USB-serial tty cores at boot so the service's device-group
+# allow rules (char-ttyUSB / char-ttyACM) always resolve — otherwise a first
+# plug-in after a boot-with-nothing-attached fails with "Operation not
+# permitted". modprobe now so it also works this session.
+log "Registering USB-serial drivers at boot (so the port opens after a replug) …"
+cat > /etc/modules-load.d/spe-remote.conf <<'MODULES_EOF'
+# USB-serial (ttyUSB*, major 188) and USB-CDC (ttyACM*, major 166) tty cores.
+usbserial
+cdc_acm
+MODULES_EOF
+chmod 0644 /etc/modules-load.d/spe-remote.conf
+modprobe usbserial 2>/dev/null || true
+modprobe cdc_acm 2>/dev/null || true
+
+# ModemManager probes new serial ports as possible modems and can hold the
+# port ("Device or resource busy"). Tag the common USB-serial bridges so it
+# ignores them. Harmless if ModemManager isn't installed.
+log "Installing ModemManager ignore rule for USB-serial adapters …"
+cat > /etc/udev/rules.d/99-spe-remote-mm.rules <<'MM_EOF'
+# Keep ModemManager off SPE USB-serial adapters (FTDI, CP210x, CH340, PL2303).
+ACTION=="add|change", SUBSYSTEM=="tty", SUBSYSTEMS=="usb", ATTRS{idVendor}=="0403", ENV{ID_MM_DEVICE_IGNORE}="1"
+ACTION=="add|change", SUBSYSTEM=="tty", SUBSYSTEMS=="usb", ATTRS{idVendor}=="10c4", ENV{ID_MM_DEVICE_IGNORE}="1"
+ACTION=="add|change", SUBSYSTEM=="tty", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1a86", ENV{ID_MM_DEVICE_IGNORE}="1"
+ACTION=="add|change", SUBSYSTEM=="tty", SUBSYSTEMS=="usb", ATTRS{idVendor}=="067b", ENV{ID_MM_DEVICE_IGNORE}="1"
+MM_EOF
+chmod 0644 /etc/udev/rules.d/99-spe-remote-mm.rules
+udevadm control --reload-rules 2>/dev/null || true
+udevadm trigger --subsystem-match=tty --action=change 2>/dev/null || true
 
 systemctl daemon-reload
 

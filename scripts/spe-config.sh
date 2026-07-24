@@ -440,15 +440,17 @@ ProtectKernelModules=true
 ProtectControlGroups=true
 RestrictSUIDSGID=true
 ReadOnlyPaths=/etc/letsencrypt
-DeviceAllow=/dev/ttyUSB0 rw
-DeviceAllow=/dev/ttyUSB1 rw
-DeviceAllow=/dev/ttyUSB2 rw
-DeviceAllow=/dev/ttyUSB3 rw
-# Newer amps (e.g. 1.5K-FA TAURUS) enumerate as USB-CDC devices, which
-# appear as /dev/ttyACM* rather than /dev/ttyUSB* — without these lines the
-# sandbox denies the port even though the web UI can still list it.
-DeviceAllow=/dev/ttyACM0 rw
-DeviceAllow=/dev/ttyACM1 rw
+# Allow USB-serial (ttyUSB*, char major 188) and USB-CDC (ttyACM*, char major
+# 166) devices by device GROUP, not by fixed node path. A DeviceAllow=/dev/...
+# path is resolved to a single major:minor at unit-start time, so if the
+# adapter isn't plugged in when the service starts — or is replugged as a
+# different ttyUSBn — the sandbox denies the port with "Operation not
+# permitted" (EPERM) even though the web UI still lists it. The char-ttyUSB /
+# char-ttyACM groups cover every such node regardless of plug order or which
+# number it enumerates as.
+DeviceAllow=char-ttyUSB rw
+DeviceAllow=char-ttyACM rw
+# On-board GPIO UART (Raspberry Pi) — present from boot, so a node path is fine.
 DeviceAllow=/dev/ttyAMA0 rw
 DeviceAllow=/dev/serial0 rw
 

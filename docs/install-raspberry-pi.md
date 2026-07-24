@@ -191,6 +191,19 @@ you're sure they're unused.
   path and that the arch matches (64-bit Pi OS for the arm64 build).
 - **No serial device in Settings** — amp powered + USB seated; `pi` in
   `dialout` and re-logged-in; ↻ rescan.
+- **Port is listed but connecting shows "Operation not permitted"** — the
+  USB-serial adapter was plugged in *after* the service started, so the
+  sandbox hadn't allowed that device yet. With the adapter plugged in, run
+  `sudo systemctl restart spe-remoted`. Current installers allow all
+  USB-serial adapters regardless of plug order; if you installed an older
+  version, re-run the one-shot installer to update the service file.
+- **Connecting shows "Device or resource busy"** — something else opened the
+  port. Usually that's **ModemManager** probing the adapter as a modem. The
+  installer adds a udev rule that tells ModemManager to ignore the common
+  USB-serial bridge chips (FTDI/CP210x/CH340/PL2303), applied on the next
+  replug or reboot. If a USB-CDC amplifier (e.g. the 1.5K-FA TAURUS on
+  `/dev/ttyACM*`) is still grabbed, and the Pi has no cellular modem, disable
+  ModemManager entirely: `sudo systemctl mask --now ModemManager`.
 - **`tailscale cert` button greyed out / fails** — install Tailscale on the Pi
   and enable HTTPS Certificates + MagicDNS in the admin console
   ([troubleshooting](tailscale-setup.md#troubleshooting)).
