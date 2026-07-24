@@ -18,10 +18,10 @@ the model once; everything else follows.
 | SPE Expert **1.5K-FA TAURUS** | **1.5K-FA TAURUS** | **115200** |
 | SPE Expert **2K-FA** | **2K-FA** | **115200** |
 
-Pick your exact model from the **Amplifier model** dropdown on the **Settings**
-page (browse to `http://<host>:8080/settings.html` — both the desktop app and
-the headless daemon serve it). When you change the model, the app auto-snaps the
-baud rate to that model's default, so you rarely need to touch baud manually.
+Pick your exact model from the **Amplifier model** dropdown — in the desktop
+app's **Connection settings** (the ⚙ cog), or on the web **Settings** page for a
+headless Pi. When you change the model, the app auto-snaps the baud rate to that
+model's default, so you rarely need to touch baud manually.
 
 ## Physical connection
 
