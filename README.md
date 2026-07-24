@@ -7,7 +7,8 @@ amplifier over USB, then lets you reach it from another room or another country
 over an **encrypted Tailscale tunnel**. No port forwarding, no exposing your
 home network, no fees.
 
-Supports the **SPE Expert 1K-FA** and the **1.3K-FA / 1.5K-FA / 2K-FA** family.
+Supports the **SPE Expert 1K-FA**, **1.3K-FA**, **1.5K-FA**, **1.5K-FA TAURUS**,
+and **2K-FA** — pick your exact model on the Settings page.
 
 > **Downloads are on the [Releases page](../../releases/latest).**
 > Pick the file for your system — see the per-OS guides below.
@@ -37,9 +38,11 @@ so you can run the amp from a phone over Tailscale with no extra app.
 
 ![SPE Remote on Android](docs/images/phoneshot.jpg)
 
-**Settings page** — pick the serial port and amp model, and turn on
-browser-trusted HTTPS in one click using your Tailscale MagicDNS name.
-Everything saves to the daemon's config and survives reboots.
+**Settings page** — pick the serial port, then **choose your exact amplifier
+from the model dropdown** (1K-FA, 1.3K-FA, 1.5K-FA, 1.5K-FA TAURUS, or 2K-FA)
+so the app matches your radio. You can also turn on browser-trusted HTTPS in
+one click using your Tailscale MagicDNS name. Everything saves to the daemon's
+config and survives reboots.
 
 ![Settings page](docs/images/settings.png)
 

@@ -13,11 +13,15 @@ the model once; everything else follows.
 | Your amplifier | Choose model | Baud rate |
 |---|---|---|
 | SPE Expert **1K-FA** | **1K-FA** | **9600** |
-| SPE Expert **1.3K-FA / 1.5K-FA / 2K-FA** | **1.3K–2K-FA** | **115200** |
+| SPE Expert **1.3K-FA** | **1.3K-FA** | **115200** |
+| SPE Expert **1.5K-FA** | **1.5K-FA** | **115200** |
+| SPE Expert **1.5K-FA TAURUS** | **1.5K-FA TAURUS** | **115200** |
+| SPE Expert **2K-FA** | **2K-FA** | **115200** |
 
-Set both in **Connection settings** (desktop app: the ⚙ cog) or the web
-**Settings** page (headless Pi). When you change the model, the app auto-snaps
-the baud rate to that model's default — you rarely need to touch baud manually.
+Pick your exact model from the **Amplifier model** dropdown on the **Settings**
+page (browse to `http://<host>:8080/settings.html` — both the desktop app and
+the headless daemon serve it). When you change the model, the app auto-snaps the
+baud rate to that model's default, so you rarely need to touch baud manually.
 
 ## Physical connection
 
@@ -43,7 +47,7 @@ mirroring the amplifier — power output, SWR, currents, band, antenna, etc.
 
 ## Model differences worth knowing
 
-**1.3K-FA / 1.5K-FA / 2K-FA**
+**1.3K-FA / 1.5K-FA / 1.5K-FA TAURUS / 2K-FA**
 - 115200 baud, ASCII status protocol.
 - The LCD shows the live operate screen (PA OUT / I PA / SWR bar graphs + the
   `IN | BAND | ANT | CAT | OUT | PW GAIN | TEMP` status row).
@@ -57,10 +61,15 @@ mirroring the amplifier — power output, SWR, currents, band, antenna, etc.
 
 ## Remote power on/off
 
-You can switch the amp between **standby** and **operate** remotely from the
-panel. For this to work the amplifier must have **mains power** and be in
-**standby** (not switched fully off at the rear) so it can receive the power-on
-command.
+The panel's **ON** and **OFF** buttons power the amplifier up and down remotely.
+For this to work the amplifier must have **mains power** (its rear switch on) so
+it can receive the power-on signal — the ON button can't help if the amp is
+switched fully off at the back.
+
+For the 1.3K–2K family, a **Power-on method** option on the Settings page
+(**Auto / USB / RS-232**) selects how the ON button reaches the amp: **Auto**
+fits the amp's built-in USB port, while **RS-232** is for a real serial port
+wired to the amplifier's Remote_ON pin. Most users leave it on **Auto**.
 
 ---
 
@@ -82,5 +91,6 @@ You use this software entirely at your own risk — see [EULA.txt](../EULA.txt).
   Re-check the table above.
 - **Won't connect at all** — wrong serial port, amp off, CAT disabled on the
   amp, or a bad cable. Try ↻ rescan and confirm the port in your OS.
-- **Power-on does nothing remotely** — the amp is fully off at the rear; it must
-  be in standby to accept a remote power-on.
+- **Power-on does nothing remotely** — the amp is fully off at the rear (it must
+  have mains power to accept a remote power-on), or, on a real RS-232 port, the
+  **Power-on method** needs to be set to **RS-232** (see above).
