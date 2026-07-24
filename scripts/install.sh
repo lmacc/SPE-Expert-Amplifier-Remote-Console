@@ -287,6 +287,9 @@ ACTION=="add|change", SUBSYSTEM=="tty", SUBSYSTEMS=="usb", ATTRS{idVendor}=="040
 ACTION=="add|change", SUBSYSTEM=="tty", SUBSYSTEMS=="usb", ATTRS{idVendor}=="10c4", ENV{ID_MM_DEVICE_IGNORE}="1"
 ACTION=="add|change", SUBSYSTEM=="tty", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1a86", ENV{ID_MM_DEVICE_IGNORE}="1"
 ACTION=="add|change", SUBSYSTEM=="tty", SUBSYSTEMS=="usb", ATTRS{idVendor}=="067b", ENV{ID_MM_DEVICE_IGNORE}="1"
+# USB-CDC amps (e.g. 1.5K-FA TAURUS on ttyACM*) have no fixed vendor id — ignore
+# the whole USB CDC-ACM class. Also skips a USB cellular modem on ttyACM if any.
+ACTION=="add|change", SUBSYSTEM=="tty", SUBSYSTEMS=="usb", KERNEL=="ttyACM*", ENV{ID_MM_DEVICE_IGNORE}="1"
 MM_EOF
 chmod 0644 /etc/udev/rules.d/99-spe-remote-mm.rules
 udevadm control --reload-rules 2>/dev/null || true

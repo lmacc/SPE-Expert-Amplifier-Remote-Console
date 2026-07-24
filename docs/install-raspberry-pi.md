@@ -199,11 +199,12 @@ you're sure they're unused.
   version, re-run the one-shot installer to update the service file.
 - **Connecting shows "Device or resource busy"** — something else opened the
   port. Usually that's **ModemManager** probing the adapter as a modem. The
-  installer adds a udev rule that tells ModemManager to ignore the common
-  USB-serial bridge chips (FTDI/CP210x/CH340/PL2303), applied on the next
-  replug or reboot. If a USB-CDC amplifier (e.g. the 1.5K-FA TAURUS on
-  `/dev/ttyACM*`) is still grabbed, and the Pi has no cellular modem, disable
-  ModemManager entirely: `sudo systemctl mask --now ModemManager`.
+  installer adds a udev rule telling ModemManager to ignore the SPE USB-serial
+  adapters — the common FTDI/CP210x/CH340/PL2303 bridges *and* all USB-CDC
+  ports, so USB-CDC amps like the 1.5K-FA TAURUS on `/dev/ttyACM*` are covered
+  too — applied on the next replug or reboot. If something still holds the port
+  and the Pi has no cellular modem, disable ModemManager entirely:
+  `sudo systemctl mask --now ModemManager`.
 - **`tailscale cert` button greyed out / fails** — install Tailscale on the Pi
   and enable HTTPS Certificates + MagicDNS in the admin console
   ([troubleshooting](tailscale-setup.md#troubleshooting)).
