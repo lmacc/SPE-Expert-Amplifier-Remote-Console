@@ -1,6 +1,6 @@
 # SPE Expert Amplifier Remote
 
-Control your **SPE Expert** HF amplifier from anywhere — securely — by **EI5GJB**.
+Control your **SPE Expert** HF amplifier from anywhere.
 
 A native app + browser UI that mirrors the real SPE front panel and drives the
 amplifier over USB, then lets you reach it from another room or another country
